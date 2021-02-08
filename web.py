@@ -37,7 +37,8 @@ text2 = font.render("OK", True, (255, 255, 255))
 screen.blit(text, (9, 13))
 screen.blit(text2, (405, 45))
 pygame.display.flip()
-type = ['map', 'sat', 'sat,skl']
+type_map = ['map', 'sat', 'sat,skl']
+pts = []
 lnum = 0
 input_rect = pygame.Rect(400, 0, 198, 40)
 active = False
@@ -100,9 +101,17 @@ while running:
             ok = False
             ask = ''
             serv = 'http://static-maps.yandex.ru/1.x/'
-            map_request = f"{serv}?ll={coords}&spn={spn}&l={type[lnum]}&pt={coords},org"
+            if pts:
+                map_request = f"{serv}?ll={coords}&spn={spn}&l={type_map[lnum]}&pt={coords}~{'~'.join(pts)}"
+            else:
+                map_request = f"{serv}?ll={coords}&spn={spn}&l={type_map[lnum]}&pt={coords}"
+            pts.append(coords)
         else:
-            map_request = f"http://static-maps.yandex.ru/1.x/?ll={coords}&spn={spn}&l={type[lnum]}"
+            serv = 'http://static-maps.yandex.ru/1.x/'
+            if pts:
+                map_request = f"{serv}?ll={coords}&spn={spn}&l={type_map[lnum]}&pt={'~'.join(pts)}"
+            else:
+                map_request = f"{serv}?ll={coords}&spn={spn}&l={type_map[lnum]}"
         map_file = "map.png"
         response = requests.get(map_request)
         with open(map_file, "wb") as file:
