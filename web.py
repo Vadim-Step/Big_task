@@ -31,11 +31,14 @@ pygame.draw.rect(screen, (0, 0, 0), (0, 0, 150, 50))
 pygame.draw.rect(screen, (255, 255, 255), (400, 0, 198, 40))
 pygame.draw.rect(screen, (0, 0, 0), (398, 0, 200, 40), 2)
 pygame.draw.rect(screen, (0, 0, 0), (398, 40, 60, 40))
+pygame.draw.rect(screen, (0, 0, 0), (529, 40, 70, 40))
 font = pygame.font.Font(None, 40)
 text = font.render("CHANGE", True, (255, 255, 255))
 text2 = font.render("OK", True, (255, 255, 255))
+text3 = font.render("DEL", True, (255, 255, 255))
 screen.blit(text, (9, 13))
 screen.blit(text2, (405, 45))
+screen.blit(text3, (535, 45))
 pygame.display.flip()
 type_map = ['map', 'sat', 'sat,skl']
 pts = []
@@ -43,6 +46,7 @@ lnum = 0
 input_rect = pygame.Rect(400, 0, 198, 40)
 active = False
 ok = False
+delete = False
 err = False
 ask = ''
 clock = pygame.time.Clock()
@@ -57,6 +61,9 @@ while running:
                 renew = True
             if 398 <= event.pos[0] <= 458 and 40 <= event.pos[1] <= 100 and ask != '':
                 ok = True
+                renew = True
+            if 529 <= event.pos[0] <= 599 and 40 <= event.pos[1] <= 80:
+                delete = True
                 renew = True
             if input_rect.collidepoint(event.pos):
                 active = True
@@ -87,6 +94,9 @@ while running:
                 coords = ','.join([str(i) for i in coords_num])
                 renew = True
     if renew:
+        if delete and pts != []:
+            pts = pts[:-1]
+            delete = False
         if ok and ask != '':
             toponym_to_find = ask
             params = {
@@ -107,13 +117,21 @@ while running:
                     map_request = f"{serv}?ll={coords}&spn={spn}&l={type_map[lnum]}&pt={coords}~{'~'.join(pts)}"
                 else:
                     map_request = f"{serv}?ll={coords}&spn={spn}&l={type_map[lnum]}&pt={coords}"
-                pts.append(coords)
+                pts1 = []
+                if coords in pts:
+                    for i in pts:
+                        if i != coords:
+                            pts1.append(i)
+                    pts1.append(coords)
+                    pts = pts1
             except IndexError:
                 err = True
                 ok = False
                 text = font.render("ERR", True, (255, 0, 0))
-                screen.blit(text, (480, 45))
+                screen.blit(text, (460, 45))
                 pygame.display.flip()
+            else:
+                pts.append(coords)
         else:
             serv = 'http://static-maps.yandex.ru/1.x/'
             if pts:
@@ -132,15 +150,20 @@ while running:
         pygame.draw.rect(screen, (255, 255, 255), (400, 0, 198, 40))
         pygame.draw.rect(screen, (0, 0, 0), (398, 0, 200, 40), 2)
         pygame.draw.rect(screen, (0, 0, 0), (398, 40, 60, 40))
+        pygame.draw.rect(screen, (0, 0, 0), (529, 40, 70, 40))
         text = font.render(ask, True, (250, 0, 150))
         text2 = font.render("OK", True, (255, 255, 255))
+        text3 = font.render("DEL", True, (255, 255, 255))
+        screen.blit(text3, (535, 45))
         screen.blit(text2, (405, 45))
         screen.blit(text, (400, 7))
         if err:
             text = font.render("ERR", True, (255, 0, 0))
-            screen.blit(text, (480, 45))
+            screen.blit(text, (460, 45))
             err = False
             ok = False
+
     pygame.display.flip()
+    clock.tick(60)
 
 os.remove(map_file)
