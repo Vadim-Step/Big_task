@@ -43,6 +43,7 @@ lnum = 0
 input_rect = pygame.Rect(400, 0, 198, 40)
 active = False
 ok = False
+err = False
 ask = ''
 clock = pygame.time.Clock()
 while running:
@@ -54,7 +55,7 @@ while running:
             if 0 <= event.pos[0] <= 150 and 0 <= event.pos[1] <= 50:
                 lnum = (lnum + 1) % 3
                 renew = True
-            if 398 <= event.pos[0] <= 458 and 40 <= event.pos[1] <= 100:
+            if 398 <= event.pos[0] <= 458 and 40 <= event.pos[1] <= 100 and ask != '':
                 ok = True
                 renew = True
             if input_rect.collidepoint(event.pos):
@@ -94,18 +95,25 @@ while running:
                 'format': 'json'
             }
             resp = requests.get(f"http://geocode-maps.yandex.ru/1.x/", params=params)
-            coords_num1 = resp.json()['response']['GeoObjectCollection']['featureMember'][0][
-                'GeoObject']['Point']['pos'].split()
-            coords_num = [float(coords_num1[0]), float(coords_num1[1])]
-            coords = ','.join(coords_num1)
-            ok = False
-            ask = ''
-            serv = 'http://static-maps.yandex.ru/1.x/'
-            if pts:
-                map_request = f"{serv}?ll={coords}&spn={spn}&l={type_map[lnum]}&pt={coords}~{'~'.join(pts)}"
-            else:
-                map_request = f"{serv}?ll={coords}&spn={spn}&l={type_map[lnum]}&pt={coords}"
-            pts.append(coords)
+            try:
+                coords_num1 = resp.json()['response']['GeoObjectCollection']['featureMember'][0][
+                    'GeoObject']['Point']['pos'].split()
+                coords_num = [float(coords_num1[0]), float(coords_num1[1])]
+                coords = ','.join(coords_num1)
+                ok = False
+                ask = ''
+                serv = 'http://static-maps.yandex.ru/1.x/'
+                if pts:
+                    map_request = f"{serv}?ll={coords}&spn={spn}&l={type_map[lnum]}&pt={coords}~{'~'.join(pts)}"
+                else:
+                    map_request = f"{serv}?ll={coords}&spn={spn}&l={type_map[lnum]}&pt={coords}"
+                pts.append(coords)
+            except IndexError:
+                err = True
+                ok = False
+                text = font.render("ERR", True, (255, 0, 0))
+                screen.blit(text, (480, 45))
+                pygame.display.flip()
         else:
             serv = 'http://static-maps.yandex.ru/1.x/'
             if pts:
@@ -128,8 +136,11 @@ while running:
         text2 = font.render("OK", True, (255, 255, 255))
         screen.blit(text2, (405, 45))
         screen.blit(text, (400, 7))
-
+        if err:
+            text = font.render("ERR", True, (255, 0, 0))
+            screen.blit(text, (480, 45))
+            err = False
+            ok = False
     pygame.display.flip()
-    clock.tick(60)
 
 os.remove(map_file)
