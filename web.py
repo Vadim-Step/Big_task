@@ -25,7 +25,7 @@ screen = pygame.display.set_mode((600, 450))
 screen.blit(pygame.image.load(map_file), (0, 0))
 
 running = True
-delta1 = spn_num1 * 3.25
+delta1 = spn_num1 * 1.2
 delta2 = spn_num2 * 1.2
 pygame.draw.rect(screen, (0, 0, 0), (0, 0, 150, 50))
 pygame.draw.rect(screen, (255, 255, 255), (400, 0, 198, 40))
@@ -93,6 +93,22 @@ while running:
                 coords_num[0] = min(180, coords_num[0] + delta1)
                 coords = ','.join([str(i) for i in coords_num])
                 renew = True
+            if event.key == pygame.K_PAGEUP:
+                s_num = [str(float(spn.split(',')[0]) - 0.5), str(float(spn.split(',')[1]) - 0.5)]
+                if float(s_num[0]) < 0:
+                    s_num[0] = '0'
+                if float(s_num[1]) < 0:
+                    s_num[1] = '0'
+                if float(s_num[0]) > 10:
+                    s_num[0] = '10'
+                if float(s_num[1]) > 10:
+                    s_num[0] = '10'
+                spn = ','.join(s_num)
+                renew = True
+            if event.key == pygame.K_PAGEDOWN:
+                s_num = [str(float(spn.split(',')[0]) + 0.5), str(float(spn.split(',')[1]) + 0.5)]
+                spn = ','.join(s_num)
+                renew = True
     if renew:
         if delete and pts != []:
             pts = pts[:-1]
@@ -133,6 +149,7 @@ while running:
             else:
                 pts.append(coords)
         else:
+            print(spn)
             serv = 'http://static-maps.yandex.ru/1.x/'
             if pts:
                 map_request = f"{serv}?ll={coords}&spn={spn}&l={type_map[lnum]}&pt={'~'.join(pts)}"
@@ -140,6 +157,9 @@ while running:
                 map_request = f"{serv}?ll={coords}&spn={spn}&l={type_map[lnum]}"
         map_file = "map.png"
         response = requests.get(map_request)
+        s_num2 = [float(spn.split(',')[0]), float(spn.split(',')[1])]
+        delta1 = s_num2[0] * 1.2
+        delta2 = s_num2[1] * 1.2
         with open(map_file, "wb") as file:
             file.write(response.content)
         screen.blit(pygame.image.load(map_file), (0, 0))
@@ -162,7 +182,6 @@ while running:
             screen.blit(text, (460, 45))
             err = False
             ok = False
-
     pygame.display.flip()
     clock.tick(60)
 
