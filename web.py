@@ -32,6 +32,8 @@ pygame.draw.rect(screen, (255, 255, 255), (400, 0, 198, 40))
 pygame.draw.rect(screen, (0, 0, 0), (398, 0, 200, 40), 2)
 pygame.draw.rect(screen, (0, 0, 0), (398, 40, 60, 40))
 pygame.draw.rect(screen, (0, 0, 0), (529, 40, 70, 40))
+pygame.draw.rect(screen, (255, 255, 255), (10, 380, 580, 30))
+pygame.draw.rect(screen, (0, 0, 0), (8, 378, 584, 34), 2)
 font = pygame.font.Font(None, 40)
 text = font.render("CHANGE", True, (255, 255, 255))
 text2 = font.render("OK", True, (255, 255, 255))
@@ -43,6 +45,7 @@ pygame.display.flip()
 type_map = ['map', 'sat', 'sat,skl']
 pts = []
 lnum = 0
+text4 = ''
 input_rect = pygame.Rect(400, 0, 198, 40)
 active = False
 ok = False
@@ -113,6 +116,7 @@ while running:
         if delete and pts != []:
             pts = pts[:-1]
             delete = False
+            text4 = ''
         if ok and ask != '':
             toponym_to_find = ask
             params = {
@@ -126,6 +130,16 @@ while running:
                     'GeoObject']['Point']['pos'].split()
                 coords_num = [float(coords_num1[0]), float(coords_num1[1])]
                 coords = ','.join(coords_num1)
+                params2 = {
+                    'apikey': '40d1649f-0493-4b70-98ba-98533de7710b',
+                    'geocode': coords,
+                    'format': 'json',
+                }
+                resp2 = requests.get(f"http://geocode-maps.yandex.ru/1.x/", params=params2)
+                place = resp2.json()['response']['GeoObjectCollection']['featureMember'][0]['GeoObject'][
+                    'metaDataProperty']['GeocoderMetaData']['text']
+                font2 = pygame.font.Font(None, 20)
+                text4 = font2.render(place, True, (0, 0, 0))
                 ok = False
                 ask = ''
                 serv = 'http://static-maps.yandex.ru/1.x/'
@@ -149,7 +163,6 @@ while running:
             else:
                 pts.append(coords)
         else:
-            print(spn)
             serv = 'http://static-maps.yandex.ru/1.x/'
             if pts:
                 map_request = f"{serv}?ll={coords}&spn={spn}&l={type_map[lnum]}&pt={'~'.join(pts)}"
@@ -171,9 +184,13 @@ while running:
         pygame.draw.rect(screen, (0, 0, 0), (398, 0, 200, 40), 2)
         pygame.draw.rect(screen, (0, 0, 0), (398, 40, 60, 40))
         pygame.draw.rect(screen, (0, 0, 0), (529, 40, 70, 40))
+        pygame.draw.rect(screen, (255, 255, 255), (10, 380, 580, 30))
+        pygame.draw.rect(screen, (0, 0, 0), (8, 378, 584, 34), 2)
         text = font.render(ask, True, (250, 0, 150))
         text2 = font.render("OK", True, (255, 255, 255))
         text3 = font.render("DEL", True, (255, 255, 255))
+        if text4:
+            screen.blit(text4, (15, 387))
         screen.blit(text3, (535, 45))
         screen.blit(text2, (405, 45))
         screen.blit(text, (400, 7))
