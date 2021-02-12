@@ -8,8 +8,19 @@ coords = input()
 coords_num = coords.split(',')
 coords_num = [float(coords_num[0]), float(coords_num[1])]
 spn = input()
+
 spn_num1 = float(spn.split(',')[0])
 spn_num2 = float(spn.split(',')[1])
+if spn_num1 <= 1:
+    z = '8'
+elif spn_num1 <= 2:
+    z = '7'
+elif spn_num1 <= 5:
+    z = '6'
+elif spn_num1 <= 9:
+    z = '5'
+elif spn_num1 <= 19:
+    z = '4'
 map_request = f"http://static-maps.yandex.ru/1.x/?ll={coords}&spn={spn}&l=map"
 response = requests.get(map_request)
 if not response:
@@ -25,8 +36,8 @@ screen = pygame.display.set_mode((600, 450))
 screen.blit(pygame.image.load(map_file), (0, 0))
 
 running = True
-delta1 = spn_num1 * 1.2
-delta2 = spn_num2 * 1.2
+delta1 = 1.2
+delta2 = 1.2
 pygame.draw.rect(screen, (0, 0, 0), (0, 0, 150, 50))
 pygame.draw.rect(screen, (255, 255, 255), (400, 0, 198, 40))
 pygame.draw.rect(screen, (0, 0, 0), (398, 0, 200, 40), 2)
@@ -80,39 +91,53 @@ while running:
                     ask += event.unicode
                 renew = True
         if event.type == pygame.KEYDOWN:
+            num = int(z)
+            if num < 4:
+                num = num / 100
+            elif num < 6:
+                num = num / 50
+            elif num < 8:
+                num = num / 10
+            elif num < 10:
+                num = num / 5
+            elif num < 12:
+                num = num / 2
+            elif num < 13:
+                num = num * 4
+            elif num < 14:
+                num = num * 16
+            elif num < 15:
+                num = num * 32
+            elif num < 16:
+                num = num * 100
             if event.key == pygame.K_UP:
-                coords_num[1] = min(85, coords_num[1] + delta2)
+                coords_num[1] = min(85, coords_num[1] + delta2 / num)
                 coords = ','.join([str(i) for i in coords_num])
                 renew = True
             if event.key == pygame.K_DOWN:
-                coords_num[1] = max(-85, coords_num[1] - delta2)
+                coords_num[1] = max(-85, coords_num[1] - delta2 / num)
                 coords = ','.join([str(i) for i in coords_num])
                 renew = True
             if event.key == pygame.K_LEFT:
-                coords_num[0] = max(0, coords_num[0] - delta1)
+                coords_num[0] = max(0, coords_num[0] - delta1 / num)
                 coords = ','.join([str(i) for i in coords_num])
                 renew = True
             if event.key == pygame.K_RIGHT:
-                coords_num[0] = min(180, coords_num[0] + delta1)
+                coords_num[0] = min(180, coords_num[0] + delta1 / num)
                 coords = ','.join([str(i) for i in coords_num])
                 renew = True
             if event.key == pygame.K_PAGEUP:
-                s_num = [str(float(spn.split(',')[0]) - 0.5), str(float(spn.split(',')[1]) - 0.5)]
-                if float(s_num[0]) < 0:
-                    s_num[0] = '0'
-                if float(s_num[1]) < 0:
-                    s_num[1] = '0'
-                if float(s_num[0]) > 10:
-                    s_num[0] = '10'
-                if float(s_num[1]) > 10:
-                    s_num[0] = '10'
-                spn = ','.join(s_num)
+                z = str(int(z) - 1)
+                if int(z) < 1:
+                    z = '1'
                 renew = True
             if event.key == pygame.K_PAGEDOWN:
-                s_num = [str(float(spn.split(',')[0]) + 0.5), str(float(spn.split(',')[1]) + 0.5)]
-                spn = ','.join(s_num)
+                z = str(int(z) + 1)
+                if int(z) > 17:
+                    z = '17'
                 renew = True
     if renew:
+        serv = 'http://static-maps.yandex.ru/1.x/'
         if delete and pts != []:
             pts = pts[:-1]
             delete = False
@@ -144,9 +169,9 @@ while running:
                 ask = ''
                 serv = 'http://static-maps.yandex.ru/1.x/'
                 if pts:
-                    map_request = f"{serv}?ll={coords}&spn={spn}&l={type_map[lnum]}&pt={coords}~{'~'.join(pts)}"
+                    map_request = f"{serv}?ll={coords}&z={z}&l={type_map[lnum]}&pt={coords}~{'~'.join(pts)}"
                 else:
-                    map_request = f"{serv}?ll={coords}&spn={spn}&l={type_map[lnum]}&pt={coords}"
+                    map_request = f"{serv}?ll={coords}&z={z}&l={type_map[lnum]}&pt={coords}"
                 pts1 = []
                 if coords in pts:
                     for i in pts:
@@ -165,14 +190,11 @@ while running:
         else:
             serv = 'http://static-maps.yandex.ru/1.x/'
             if pts:
-                map_request = f"{serv}?ll={coords}&spn={spn}&l={type_map[lnum]}&pt={'~'.join(pts)}"
+                map_request = f"{serv}?ll={coords}&z={z}&l={type_map[lnum]}&pt={'~'.join(pts)}"
             else:
-                map_request = f"{serv}?ll={coords}&spn={spn}&l={type_map[lnum]}"
+                map_request = f"{serv}?ll={coords}&z={z}&l={type_map[lnum]}"
         map_file = "map.png"
         response = requests.get(map_request)
-        s_num2 = [float(spn.split(',')[0]), float(spn.split(',')[1])]
-        delta1 = s_num2[0] * 1.2
-        delta2 = s_num2[1] * 1.2
         with open(map_file, "wb") as file:
             file.write(response.content)
         screen.blit(pygame.image.load(map_file), (0, 0))
