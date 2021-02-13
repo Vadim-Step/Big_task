@@ -44,14 +44,18 @@ pygame.draw.rect(screen, (0, 0, 0), (398, 0, 200, 40), 2)
 pygame.draw.rect(screen, (0, 0, 0), (398, 40, 60, 40))
 pygame.draw.rect(screen, (0, 0, 0), (529, 40, 70, 40))
 pygame.draw.rect(screen, (255, 255, 255), (10, 380, 580, 30))
-pygame.draw.rect(screen, (0, 0, 0), (8, 378, 584, 34), 2)
+pygame.draw.rect(screen, (0, 0, 0), (8, 380, 582, 30), 2)
+pygame.draw.rect(screen, (255, 255, 255), (10, 330, 60, 40))
+pygame.draw.rect(screen, (0, 0, 0), (8, 330, 62, 40), 2)
 font = pygame.font.Font(None, 40)
 text = font.render("CHANGE", True, (255, 255, 255))
 text2 = font.render("OK", True, (255, 255, 255))
 text3 = font.render("DEL", True, (255, 255, 255))
+text4 = font.render("OFF", True, (0, 0, 0))
 screen.blit(text, (9, 13))
 screen.blit(text2, (405, 45))
 screen.blit(text3, (535, 45))
+screen.blit(text4, (10, 336))
 pygame.display.flip()
 type_map = ['map', 'sat', 'sat,skl']
 pts = []
@@ -60,6 +64,7 @@ text4 = ''
 input_rect = pygame.Rect(400, 0, 198, 40)
 active = False
 ok = False
+post_active = False
 delete = False
 err = False
 ask = ''
@@ -78,6 +83,9 @@ while running:
                 renew = True
             if 529 <= event.pos[0] <= 599 and 40 <= event.pos[1] <= 80:
                 delete = True
+                renew = True
+            if 10 <= event.pos[0] <= 70 and 330 <= event.pos[1] <= 370:
+                post_active = not post_active
                 renew = True
             if input_rect.collidepoint(event.pos):
                 active = True
@@ -151,6 +159,12 @@ while running:
             }
             resp = requests.get(f"http://geocode-maps.yandex.ru/1.x/", params=params)
             try:
+                try:
+                    post = resp.json()['response']['GeoObjectCollection']['featureMember'][0]['GeoObject'][
+                        'metaDataProperty']['GeocoderMetaData']['Address']['postal_code']
+                except Exception:
+                    print(resp.json())
+                    post = ''
                 coords_num1 = resp.json()['response']['GeoObjectCollection']['featureMember'][0][
                     'GeoObject']['Point']['pos'].split()
                 coords_num = [float(coords_num1[0]), float(coords_num1[1])]
@@ -164,6 +178,8 @@ while running:
                 place = resp2.json()['response']['GeoObjectCollection']['featureMember'][0]['GeoObject'][
                     'metaDataProperty']['GeocoderMetaData']['text']
                 font2 = pygame.font.Font(None, 20)
+                if post_active:
+                    place = f'{place} {post}'
                 text4 = font2.render(place, True, (0, 0, 0))
                 ok = False
                 ask = ''
@@ -207,10 +223,20 @@ while running:
         pygame.draw.rect(screen, (0, 0, 0), (398, 40, 60, 40))
         pygame.draw.rect(screen, (0, 0, 0), (529, 40, 70, 40))
         pygame.draw.rect(screen, (255, 255, 255), (10, 380, 580, 30))
-        pygame.draw.rect(screen, (0, 0, 0), (8, 378, 584, 34), 2)
+        pygame.draw.rect(screen, (0, 0, 0), (8, 380, 582, 30), 2)
         text = font.render(ask, True, (250, 0, 150))
         text2 = font.render("OK", True, (255, 255, 255))
         text3 = font.render("DEL", True, (255, 255, 255))
+        if not post_active:
+            text5 = font.render("OFF", True, (0, 0, 0))
+            pygame.draw.rect(screen, (255, 255, 255), (10, 330, 60, 40))
+            pygame.draw.rect(screen, (0, 0, 0), (8, 330, 62, 40), 2)
+            screen.blit(text5, (10, 336))
+        else:
+            text5 = font.render("ON", True, (255, 255, 255))
+            pygame.draw.rect(screen, (0, 0, 0), (10, 330, 60, 40))
+            pygame.draw.rect(screen, (255, 255, 255), (8, 330, 62, 40), 2)
+            screen.blit(text5, (10, 336))
         if text4:
             screen.blit(text4, (15, 387))
         screen.blit(text3, (535, 45))
