@@ -1,3 +1,4 @@
+import math
 import os
 import sys
 
@@ -31,9 +32,18 @@ if not response:
 map_file = "map.png"
 with open(map_file, "wb") as file:
     file.write(response.content)
+x, y = 600, 450
 pygame.init()
-screen = pygame.display.set_mode((600, 450))
+screen = pygame.display.set_mode((x, y))
 screen.blit(pygame.image.load(map_file), (0, 0))
+koeff_x, koeff_y = 0.0000428, 0.0000428
+
+
+def screen_to_geo(pos, lon, lat, z):
+    coordx = round(lon + (pos[0] - x / 2) * koeff_x * 2 ** (15 - z), 6)
+    coordy = round(lat + (y / 2 - pos[1]) * koeff_y * math.cos(math.radians(lat)) * 2 ** (15 - z), 6)
+    return coordx, coordy
+
 
 running = True
 delta1 = 1.2
@@ -66,6 +76,7 @@ active = False
 ok = False
 post_active = False
 delete = False
+tap = False
 err = False
 ask = ''
 clock = pygame.time.Clock()
@@ -78,19 +89,24 @@ while running:
             if 0 <= event.pos[0] <= 150 and 0 <= event.pos[1] <= 50:
                 lnum = (lnum + 1) % 3
                 renew = True
-            if 398 <= event.pos[0] <= 458 and 40 <= event.pos[1] <= 100 and ask != '':
-                ok = True
-                renew = True
-            if 529 <= event.pos[0] <= 599 and 40 <= event.pos[1] <= 80:
+            elif 398 <= event.pos[0] <= 458 and 40 <= event.pos[1] <= 100:
+                if ask != '':
+                    ok = True
+                    renew = True
+            elif 529 <= event.pos[0] <= 599 and 40 <= event.pos[1] <= 80:
                 delete = True
                 renew = True
-            if 10 <= event.pos[0] <= 70 and 330 <= event.pos[1] <= 370:
+            elif 10 <= event.pos[0] <= 70 and 330 <= event.pos[1] <= 370:
                 post_active = not post_active
                 renew = True
-            if input_rect.collidepoint(event.pos):
+            elif input_rect.collidepoint(event.pos):
                 active = True
             else:
                 active = False
+                coord_tap = screen_to_geo(event.pos, float(coords.split(',')[0]), float(coords.split(',')[1]), int(z))
+                tap = True
+                renew = True
+
         if active:
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_BACKSPACE:
@@ -160,7 +176,8 @@ while running:
             resp = requests.get(f"http://geocode-maps.yandex.ru/1.x/", params=params)
             try:
                 try:
-                    post = resp.json()['response']['GeoObjectCollection']['featureMember'][0]['GeoObject'][
+                    post = \
+                    resp.json()['response']['GeoObjectCollection']['featureMember'][0]['GeoObject'][
                         'metaDataProperty']['GeocoderMetaData']['Address']['postal_code']
                 except Exception:
                     print(resp.json())
@@ -195,14 +212,68 @@ while running:
                             pts1.append(i)
                     pts1.append(coords)
                     pts = pts1
+                else:
+                    pts.append(coords)
             except IndexError:
                 err = True
                 ok = False
                 text = font.render("ERR", True, (255, 0, 0))
                 screen.blit(text, (460, 45))
                 pygame.display.flip()
-            else:
-                pts.append(coords)
+
+        if tap:
+            try:
+                coords1 = f'{coord_tap[0]},{coord_tap[1]}'
+                params2 = {
+                    'apikey': '40d1649f-0493-4b70-98ba-98533de7710b',
+                    'geocode': coords1,
+                    'format': 'json',
+                }
+                resp2 = requests.get(f"http://geocode-maps.yandex.ru/1.x/", params=params2)
+                place = resp2.json()['response']['GeoObjectCollection']['featureMember'][0]['GeoObject'][
+                    'metaDataProperty']['GeocoderMetaData']['text']
+                coords_num = [float(coords.split(',')[0]), float(coords.split(',')[1])]
+                font2 = pygame.font.Font(None, 20)
+
+                if post_active:
+                    try:
+                        params = {
+                            'apikey': '40d1649f-0493-4b70-98ba-98533de7710b',
+                            'geocode': coords1,
+                            'format': 'json'
+                        }
+                        resp = requests.get(f"http://geocode-maps.yandex.ru/1.x/", params=params)
+                        post = \
+                            resp.json()['response']['GeoObjectCollection']['featureMember'][0][
+                                'GeoObject'][
+                                'metaDataProperty']['GeocoderMetaData']['Address']['postal_code']
+                        place = f'{place} {post}'
+                    except Exception:
+                        pass
+                text4 = font2.render(place, True, (0, 0, 0))
+                ok = False
+                ask = ''
+                serv = 'http://static-maps.yandex.ru/1.x/'
+                if pts:
+                    map_request = f"{serv}?ll={coords}&z={z}&l={type_map[lnum]}&pt={coords1}~{'~'.join(pts)}"
+                else:
+                    map_request = f"{serv}?ll={coords}&z={z}&l={type_map[lnum]}&pt={coords1}"
+                pts1 = []
+                if coords1 in pts:
+                    for i in pts:
+                        if i != coords1:
+                            pts1.append(i)
+                    pts1.append(coords1)
+                    pts = pts1
+                else:
+                    pts.append(coords1)
+            except IndexError:
+                err = True
+                ok = False
+                text = font.render("ERR", True, (255, 0, 0))
+                screen.blit(text, (460, 45))
+                pygame.display.flip()
+            tap = False
         else:
             serv = 'http://static-maps.yandex.ru/1.x/'
             if pts:
